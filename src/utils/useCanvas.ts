@@ -1,53 +1,115 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import img1 from "../assets/cat.png";
+export const useCanvas = (
+  image: HTMLImageElement,
+  canvasContainer: HTMLDivElement | null,
+  canvas: HTMLCanvasElement | null
+) => {
+  const context = canvas?.getContext("2d");
 
-const SCALE = 0.1;
-const OFFSET = 80;
-export const canvasWidth = window.innerWidth * 0.5;
-export const canvasHeight = window.innerHeight * 0.5;
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
 
-export interface ICoordinate {
-  x: number;
-  y: number;
-}
+  const [globalCoords, setGlobalCoords] = useState({ x: 0, y: 0 });
 
-export function draw(context: CanvasRenderingContext2D) {
-  // context.fillStyle = "red";
-  // context.shadowColor = "blue";
-  // context.shadowBlur = 15;
-  // context.save();
-  // context.scale(SCALE, SCALE);
-  // context.translate(location.x / SCALE - OFFSET, location.y / SCALE - OFFSET);
-  // context.rotate((225 * Math.PI) / 180);
-  const image = new Image();
-  image.src = img1;
-  image.onload = () => {
-    context?.drawImage(image, 220, 0);
-  };
-  // .restore(): Canvas 2D API restores the most recently saved canvas state
-  context.restore();
-}
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
 
-export const useCanvas = (image: string) => {
-  const [coordinates, setCoordinates] = useState<ICoordinate[]>([]);
-  const canvasImageRef = useRef<HTMLCanvasElement>(null);
+  const [draggable, setDraggable] = useState(false);
 
   useEffect(() => {
-    const canvas = canvasImageRef.current;
-    const context = canvas?.getContext("2d");
+    const handleWindowMouseMove = (event: MouseEvent) => {
+      setGlobalCoords({
+        x: event.screenX,
+        y: event.screenY,
+      });
+    };
+    window.addEventListener("mousemove", handleWindowMouseMove);
 
-    context?.clearRect(0, 0, canvasWidth, canvasHeight);
-    if (context) {
-      draw(context);
+    return () => {
+      window.removeEventListener("mousemove", handleWindowMouseMove);
+    };
+  }, []);
+
+  useEffect(() => console.log({ draggable }), [draggable]);
+
+  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLDivElement;
+    setCoords({
+      x: event.clientX - target.offsetLeft,
+      y: event.clientY - target.offsetTop,
+    });
+
+    if (draggable) {
+      imagePosition.x = coords.x;
+      imagePosition.y = coords.y;
     }
-  }, [coordinates, image]);
+  };
 
-  return [
-    coordinates,
-    setCoordinates,
-    canvasImageRef,
-    canvasWidth,
-    canvasHeight,
-  ] as const;
+  const handleMouseDown = () => {
+    if (
+      coords.x <= imagePosition.x + image.width / 2 &&
+      coords.x >= imagePosition.x - image.width / 2 &&
+      coords.y >= imagePosition.y - image.height / 2 &&
+      coords.y <= imagePosition.y + image.height / 2
+    ) {
+      setDraggable(true);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setDraggable(false);
+  };
+
+  const setInitialPosition = useCallback(() => {
+    if (canvas) {
+      setImagePosition({ x: canvas?.width / 2, y: canvas?.height / 2 });
+    }
+  }, [canvas]);
+
+  useEffect(() => setInitialPosition(), [setInitialPosition]);
+
+  if (canvas && context) {
+    image.onload = () => {
+      if (canvas && image) {
+        resizeCanvasToDisplaySize();
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        context?.drawImage(
+          image,
+          imagePosition.x - image.width / 2,
+          imagePosition.y - image.height / 2,
+          100,
+          200
+        );
+      }
+    };
+  }
+
+  useEffect(() => {
+    if (context && canvas) {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context?.drawImage(
+        image,
+        imagePosition.x - image.width / 2,
+        imagePosition.y - image.height / 2,
+        50,
+        100
+      );
+    }
+  }, [imagePosition.x, imagePosition.y]);
+
+  const resizeCanvasToDisplaySize = useCallback(() => {
+    if (canvas && canvasContainer) {
+      const { width, height } = canvasContainer.getBoundingClientRect();
+      console.log({ width, height });
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+        return true;
+      }
+    }
+
+    return false;
+  }, [canvas, canvasContainer]);
+
+  return [handleMouseMove, handleMouseDown, handleMouseUp] as const;
 };
