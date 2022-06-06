@@ -77,8 +77,8 @@ export const useCanvas = (
           image,
           imagePosition.x - image.width / 2,
           imagePosition.y - image.height / 2,
-          100,
-          200
+          50,
+          100
         );
       }
     };

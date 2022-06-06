@@ -1,13 +1,7 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useMemo, useRef } from "react";
 
 import mario from "../../assets/mario-small.png";
-import luigi from "../../assets/luigi-small.png";
+
 import background from "../../assets/background.png";
 
 import "./Canvas.scss";
@@ -25,9 +19,6 @@ export const Canvas: React.FC<IProps> = (props) => {
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const canvasContainer = canvasContainerRef.current;
-
-  const luigiRef = useRef<HTMLCanvasElement>(null);
-  const luigiCanvas = luigiRef.current;
 
   const image = useMemo(() => {
     const img = new Image();
@@ -51,8 +42,6 @@ export const Canvas: React.FC<IProps> = (props) => {
       style={{ backgroundImage: `url(${background})`, backgroundSize: "cover" }}
     >
       <canvas ref={canvasRef}></canvas>
-      <canvas ref={luigiRef}></canvas>
-      {/* ))} */}
     </div>
   );
 };
